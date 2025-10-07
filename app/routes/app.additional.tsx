@@ -1,37 +1,40 @@
+import { useState } from "react";
+
+
 export default function AdditionalPage() {
+  const [textValue, setTextValue] = useState('');
+  const [numberValue, setNumberValue] = useState('');
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log('submit', { textValue, numberValue });
+  }
+
+
+
   return (
-    <s-page heading="Additional page">
-      <s-section heading="Multiple pages">
-        <s-paragraph>
-          The app template comes with an additional page which demonstrates how
-          to create multiple pages within app navigation using{" "}
-          <s-link
-            href="https://shopify.dev/docs/apps/tools/app-bridge"
-            target="_blank"
-          >
-            App Bridge
-          </s-link>
-          .
-        </s-paragraph>
-        <s-paragraph>
-          To create your own page and have it show up in the app navigation, add
-          a page inside <code>app/routes</code>, and a link to it in the{" "}
-          <code>&lt;ui-nav-menu&gt;</code> component found in{" "}
-          <code>app/routes/app.jsx</code>.
-        </s-paragraph>
-      </s-section>
-      <s-section slot="aside" heading="Resources">
-        <s-unordered-list>
-          <s-list-item>
-            <s-link
-              href="https://shopify.dev/docs/apps/design-guidelines/navigation#app-nav"
-              target="_blank"
-            >
-              App nav best practices
-            </s-link>
-          </s-list-item>
-        </s-unordered-list>
+    <s-page>
+      <form onSubmit={handleSubmit}>
+        <s-section padding="base" heading="Details">
+          <s-text-field label="Title" name="my-text"
+            value={textValue}
+            onChange={(e) => setTextValue((e.target as HTMLInputElement).value)}></s-text-field>
+          <s-text-area label="Description"
+            name="my-number"
+            value={numberValue}
+            onChange={(e) => setNumberValue((e.target as HTMLTextAreaElement).value)} />
+        </s-section>
+        <div style={{ marginTop: '1rem' }}>
+          <s-button type="submit">Submit</s-button>
+        </div>
+      </form>
+
+      <s-section heading="Status" slot="aside">
+        <s-select>
+          <s-option value="active">Active</s-option>
+          <s-option value="draft">Draft</s-option>
+        </s-select>
       </s-section>
     </s-page>
-  );
+  )
 }
