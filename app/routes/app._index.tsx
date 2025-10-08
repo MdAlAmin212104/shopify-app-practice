@@ -1,4 +1,33 @@
+import { Product } from "@shopify/app-bridge-react";
+import { authenticate } from "app/shopify.server";
+import { LoaderFunctionArgs, useLoaderData } from "react-router";
+
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+  const response = await admin.graphql(
+    `#graphql
+    query GetProducts {
+      products(first: 100) {
+        nodes {
+          id
+          title
+          status
+          createdAt
+        }
+      }
+    }`,
+  );
+  const json = await response.json();
+  const products = json.data?.products?.nodes || [];
+  return { products };
+};
+
+
+
 export default function Index() {
+  const { products } = useLoaderData<typeof loader>();
+
   return (
     <s-page heading="React Router app template">
       <s-section>
@@ -93,7 +122,7 @@ export default function Index() {
         </s-grid>
       </s-section>
 
-      <s-section padding="none" accessibilityLabel="Puzzles table section">
+      {/* <s-section padding="none" accessibilityLabel="Puzzles table section">
         <s-table>
           <s-grid slot="filters" gap="small-200" gridTemplateColumns="1fr auto">
             <s-text-field
@@ -217,6 +246,34 @@ export default function Index() {
                 <s-badge color="base" tone="neutral">Draft</s-badge>
               </s-table-cell>
             </s-table-row>
+          </s-table-body>
+        </s-table>
+      </s-section> */}
+
+      <s-section>
+        <s-table>
+          <s-table-header-row>
+            <s-table-header listSlot="primary">Product Title</s-table-header>
+            <s-table-header>Status</s-table-header>
+            <s-table-header>Created At</s-table-header>
+          </s-table-header-row>
+
+          <s-table-body>
+            {products.map((product: Product) => (
+              <s-table-row key={product.id}>
+                <s-table-cell>
+                  <s-link href={`shopify:admin/products/${product.id.replace("gid://shopify/Product/", "")}`}>
+                    {product.title}
+                  </s-link>
+                </s-table-cell>
+                <s-table-cell>
+                  <s-badge tone={product.status === "ACTIVE" ? "success" : "neutral"}>
+                    {product.status}
+                  </s-badge>
+                </s-table-cell>
+                <s-table-cell>{new Date(product.createdAt).toLocaleDateString()}</s-table-cell>
+              </s-table-row>
+            ))}
           </s-table-body>
         </s-table>
       </s-section>

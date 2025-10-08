@@ -2,7 +2,7 @@
 // Home page pattern
 // ===
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 export default function HomePage() {
   const [visible, setVisible] = useState({
@@ -65,7 +65,7 @@ export default function HomePage() {
                 ></s-button>
                 <s-button
                   accessibilityLabel="Toggle setup guide"
-                  onClick={(e) =>
+                  onClick={() =>
                     setExpanded({
                       ...expanded,
                       setupGuide: !expanded.setupGuide,
@@ -102,7 +102,7 @@ export default function HomePage() {
                       }
                     ></s-checkbox>
                     <s-button
-                      onClick={(e) => {
+                      onClick={() => {
                         setExpanded({ ...expanded, step1: !expanded.step1 });
                       }}
                       accessibilityLabel="Toggle step 1 details"
@@ -159,7 +159,7 @@ export default function HomePage() {
                       }
                     ></s-checkbox>
                     <s-button
-                      onClick={(e) =>
+                      onClick={() =>
                         setExpanded({ ...expanded, step2: !expanded.step2 })
                       }
                       accessibilityLabel="Toggle step 2 details"
@@ -214,7 +214,7 @@ export default function HomePage() {
                       }
                     ></s-checkbox>
                     <s-button
-                      onClick={(e) =>
+                      onClick={() =>
                         setExpanded({ ...expanded, step3: !expanded.step3 })
                       }
                       accessibilityLabel="Toggle step 3 details"
@@ -268,7 +268,7 @@ export default function HomePage() {
       {/* Metrics cards */}
       {/* Your app homepage should provide merchants with quick statistics or status updates that help them understand how the app is performing for them. */}
       {/* === */}
-      <s-section padding="small">
+      <s-section padding="base">
           <s-grid
             gridTemplateColumns="@container (inline-size <= 400px) 1fr, 1fr auto 1fr auto 1fr"
             gap="small"
@@ -518,7 +518,7 @@ export default function HomePage() {
               <s-heading>New puzzle shapes and themes added</s-heading>
             </s-link>
             <s-paragraph>
-              We've added 5 new puzzle piece shapes and 3 seasonal themes to
+              We`ve added 5 new puzzle piece shapes and 3 seasonal themes to
               help you create more engaging and unique puzzles for your
               customers.
             </s-paragraph>
