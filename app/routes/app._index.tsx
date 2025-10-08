@@ -1,8 +1,10 @@
 import { Product } from "@shopify/app-bridge-react";
 import { authenticate } from "app/shopify.server";
-import { LoaderFunctionArgs, useLoaderData } from "react-router";
+import { useState } from "react";
+import { LoaderFunctionArgs, useLoaderData, Form, useActionData, useNavigation, ActionFunctionArgs, useFetcher} from "react-router";
 
 
+// 🟢 Loader → existing products দেখানোর জন্য
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
   const response = await admin.graphql(
@@ -24,9 +26,98 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 
+// 🟢 Action → create OR delete product
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const formDataObject = Object.fromEntries(formData);
+
+  // const actionType = formData.get("_action");
+
+  // 🗑️ Delete Product Logic
+   if (formDataObject._action === "delete") {
+    const productId = formData.get("id");
+    const deleteResponse = await admin.graphql(
+      `#graphql
+      mutation DeleteProduct($input: ProductDeleteInput!) {
+        productDelete(input: $input) {
+          deletedProductId
+          userErrors {
+            message
+          }
+        }
+      }`,
+      {
+        variables: {
+          input: { id: productId },
+        },
+      },
+    );
+
+    const deleteJson = await deleteResponse.json();
+    if (deleteJson.data.productDelete.userErrors.length > 0) {
+      return { error: deleteJson.data.productDelete.userErrors[0].message };
+    }
+
+    return { success: true, deleted: deleteJson.data.productDelete.deletedProductId };
+  }
+
+  // 🟢 Create Product Logic
+  const title = formData.get("title");
+  const description = formData.get("description");
+
+  const response = await admin.graphql(
+    `#graphql
+    mutation CreateProduct($input: ProductInput!) {
+      productCreate(input: $input) {
+        product {
+          id
+          title
+        }
+        userErrors {
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        input: {
+          title,
+          descriptionHtml: description,
+        },
+      },
+    },
+  );
+
+  const json = await response.json();
+  if (json.data.productCreate.userErrors.length > 0) {
+    return { error: json.data.productCreate.userErrors[0].message };
+  }
+
+  return { success: true, product: json.data.productCreate.product };
+};
+
 
 export default function Index() {
   const { products } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const isLoading = navigation.state === "submitting";
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const fetcher = useFetcher();
+
+  
+
+
+
+  if (!Array.isArray(products)) {
+    return <div>❌ Something went wrong. No products found.</div>;
+  }
+
+  const handleDeleteClick = (id: string) => {
+    fetcher.submit({ id, _action: "delete" }, { method: "post" });
+  };
 
   return (
     <s-page heading="React Router app template">
@@ -51,7 +142,7 @@ export default function Index() {
             <s-paragraph>
               Use this personalized guide to get your store ready for sales.
             </s-paragraph>
-            <s-paragraph tone="subdued">0 out of 3 steps completed</s-paragraph>
+            <s-paragraph>0 out of 3 steps completed</s-paragraph>
           </s-grid>
           <s-box borderRadius="base" border="base" background="base">
             <s-box>
@@ -122,133 +213,42 @@ export default function Index() {
         </s-grid>
       </s-section>
 
-      {/* <s-section padding="none" accessibilityLabel="Puzzles table section">
-        <s-table>
-          <s-grid slot="filters" gap="small-200" gridTemplateColumns="1fr auto">
+      {/* Product Generator */}
+      <s-section heading="Product Generator">
+        <Form method="post">
+          <div style={{ marginBottom: "1rem", marginTop: "1rem" }}>
             <s-text-field
-              icon="search"
-              placeholder="Searching all puzzles"
-            ></s-text-field>
-            <s-button
-              icon="sort"
-              variant="secondary"
-              interestFor="sort-tooltip"
-              commandFor="sort-actions"
-            ></s-button>
-            <s-tooltip id="sort-tooltip">
-              <s-text>Sort</s-text>
-            </s-tooltip>
-            <s-popover id="sort-actions">
-              <s-stack gap="none">
-                <s-box padding="small">
-                  <s-choice-list label="Sort by" name="Sort by">
-                    <s-choice value="puzzle-name" selected>Puzzle name</s-choice>
-                    <s-choice value="pieces">Pieces</s-choice>
-                    <s-choice value="created">Created</s-choice>
-                    <s-choice value="status">Status</s-choice>
-                  </s-choice-list>
-                </s-box>
-                <s-divider></s-divider>
-                <s-box padding="small">
-                  <s-choice-list label="Order by" name="Order by">
-                    <s-choice value="product-title" selected>A-Z</s-choice>
-                    <s-choice value="created">Z-A</s-choice>
-                  </s-choice-list>
-                </s-box>
-              </s-stack>
-            </s-popover>
-          </s-grid>
-          <s-table-header-row>
-            <s-table-header listSlot="primary">Puzzle</s-table-header>
-            <s-table-header format="numeric">Pieces</s-table-header>
-            <s-table-header>Created</s-table-header>
-            <s-table-header listSlot="secondary">Status</s-table-header>
-          </s-table-header-row>
-          <s-table-body>
-            <s-table-row clickDelegate="mountain-view-checkbox">
-              <s-table-cell>
-                <s-stack direction="inline" gap="small" alignItems="center">
-                  <s-checkbox id="mountain-view-checkbox"></s-checkbox>
-                  <s-clickable
-                    href=""
-                    accessibilityLabel="Mountain View puzzle thumbnail"
-                    border="base"
-                    borderRadius="base"
-                    overflow="hidden"
-                    inlineSize="40px"
-                    blockSize="40px"
-                  >
-                    <s-image
-                      objectFit="cover"
-                      src="https://picsum.photos/id/29/80/80"
-                    ></s-image>
-                  </s-clickable>
-                  <s-link href="">Product title</s-link>
-                </s-stack>
-              </s-table-cell>
-              <s-table-cell>16</s-table-cell>
-              <s-table-cell>Today</s-table-cell>
-              <s-table-cell>
-                <s-badge color="base" tone="success">Active</s-badge>
-              </s-table-cell>
-            </s-table-row>
-            <s-table-row clickDelegate="ocean-sunset-checkbox">
-              <s-table-cell>
-                <s-stack direction="inline" gap="small" alignItems="center">
-                  <s-checkbox id="ocean-sunset-checkbox"></s-checkbox>
-                  <s-clickable
-                    href=""
-                    accessibilityLabel="Ocean Sunset puzzle thumbnail"
-                    border="base"
-                    borderRadius="base"
-                    overflow="hidden"
-                    inlineSize="40px"
-                    blockSize="40px"
-                  >
-                    <s-image
-                      objectFit="cover"
-                      src="https://picsum.photos/id/12/80/80"
-                    ></s-image>
-                  </s-clickable>
-                  <s-link href="">Ocean Sunset</s-link>
-                </s-stack>
-              </s-table-cell>
-              <s-table-cell>9</s-table-cell>
-              <s-table-cell>Yesterday</s-table-cell>
-              <s-table-cell>
-                <s-badge color="base" tone="success">Active</s-badge>
-              </s-table-cell>
-            </s-table-row>
-            <s-table-row clickDelegate="forest-animals-checkbox">
-              <s-table-cell>
-                <s-stack direction="inline" gap="small" alignItems="center">
-                  <s-checkbox id="forest-animals-checkbox"></s-checkbox>
-                  <s-clickable
-                    href=""
-                    accessibilityLabel="Forest Animals puzzle thumbnail"
-                    border="base"
-                    borderRadius="base"
-                    overflow="hidden"
-                    inlineSize="40px"
-                    blockSize="40px"
-                  >
-                    <s-image
-                      objectFit="cover"
-                      src="https://picsum.photos/id/324/80/80"
-                    ></s-image>
-                  </s-clickable>
-                  <s-link href="">Forest Animals</s-link>
-                </s-stack>
-              </s-table-cell>
-              <s-table-cell>25</s-table-cell>
-              <s-table-cell>Last week</s-table-cell>
-              <s-table-cell>
-                <s-badge color="base" tone="neutral">Draft</s-badge>
-              </s-table-cell>
-            </s-table-row>
-          </s-table-body>
-        </s-table>
-      </s-section> */}
+              label="Product Title"
+              name="title"
+              value={title}
+              onChange={(e) => setTitle((e.target as HTMLInputElement).value)}
+              required
+            />
+          </div>
+          <s-text-area
+            label="Description"
+            name="description"
+            value={description}
+            onChange={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
+            rows={4}
+          />
+          <div style={{ marginTop: "1rem" }}>
+            <s-button variant="primary" type="submit" >
+              Add Product
+            </s-button>
+          </div>
+        </Form>
+
+        {actionData?.success && (
+          <s-banner tone="success">
+            ✅ Product created successfully: {actionData.product.title}
+          </s-banner>
+        )}
+        {actionData?.error && (
+          <s-banner tone="critical">⚠️ Error: {actionData.error}</s-banner>
+        )}
+      </s-section>
+
 
       <s-section>
         <s-table>
@@ -256,6 +256,8 @@ export default function Index() {
             <s-table-header listSlot="primary">Product Title</s-table-header>
             <s-table-header>Status</s-table-header>
             <s-table-header>Created At</s-table-header>
+            <s-table-header>Update</s-table-header>
+            <s-table-header>Detete</s-table-header>
           </s-table-header-row>
 
           <s-table-body>
@@ -272,6 +274,20 @@ export default function Index() {
                   </s-badge>
                 </s-table-cell>
                 <s-table-cell>{new Date(product.createdAt).toLocaleDateString()}</s-table-cell>
+                <s-table-cell><s-button icon="edit"> Update</s-button></s-table-cell>
+                <s-table-cell>
+                    <s-button
+                      icon="delete"
+                      tone="critical"
+                      variant="primary"
+                      type="submit"
+                      loading={isLoading}
+                      onClick={() => handleDeleteClick(product.id)}
+                    >
+                      Delete
+                    </s-button>
+                </s-table-cell>
+
               </s-table-row>
             ))}
           </s-table-body>
