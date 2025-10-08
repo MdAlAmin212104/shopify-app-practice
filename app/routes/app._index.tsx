@@ -3,7 +3,6 @@ import { authenticate } from "app/shopify.server";
 import { useState } from "react";
 import { LoaderFunctionArgs, useLoaderData, Form, useActionData, useNavigation, ActionFunctionArgs, useFetcher} from "react-router";
 
-
 // 🟢 Loader → existing products দেখানোর জন্য
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -121,6 +120,8 @@ export default function Index() {
 
   return (
     <s-page heading="React Router app template">
+
+      {/* Setup Guide */}
       <s-section>
         <s-grid gap="base">
           <s-grid gap="small-200">
@@ -249,7 +250,7 @@ export default function Index() {
         )}
       </s-section>
 
-
+      {/* Existing Products List */}
       <s-section>
         <s-table>
           <s-table-header-row>
