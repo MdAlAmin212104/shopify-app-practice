@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { All_Products_Count, All_Products, Customers_List } from "app/graphql/graphql";
+import { All_Products_Count, All_Products, Customers_List, Product_Details } from "app/graphql/graphql";
 import { LoaderFunctionArgs, useLoaderData } from "react-router";
 import { authenticate } from "app/shopify.server";
 
@@ -21,11 +21,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const CustomerList = await admin.graphql(Customers_List);
 	const CustomerListData = await CustomerList.json();
 
+
+	// 🟢 Fetch single product details
+    const singleProductResponse = await admin.graphql(Product_Details, {
+      variables: {
+        ownerId: "gid://shopify/Product/8089192595490",
+      },
+    });
+    const singleProductData = await singleProductResponse.json();
+
     // ✅ Return both product count and product list
     return {
 		productCount: productsCountData?.data?.productsCount?.count || 0,
 		products: allProductsData?.data?.products?.nodes || [],
 		CustomerListData: CustomerListData?.data?.customersCount?.count || 0,
+		singleProduct: singleProductData?.data?.product || null,
     };
   } catch (error) {
     console.error("❌ Loader Error:", error);
