@@ -1,7 +1,46 @@
 import { useState } from "react";
+import { All_Products_Count, All_Products, Customers_List } from "app/graphql/graphql";
+import { LoaderFunctionArgs, useLoaderData } from "react-router";
+import { authenticate } from "app/shopify.server";
+
+
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+
+  try {
+    // 🟢 Fetch total product count
+    const productsCountResponse = await admin.graphql(All_Products_Count);
+    const productsCountData = await productsCountResponse.json();
+
+    // 🟢 Fetch all products
+    const allProductsResponse = await admin.graphql(All_Products);
+    const allProductsData = await allProductsResponse.json();
+
+
+	const CustomerList = await admin.graphql(Customers_List);
+	const CustomerListData = await CustomerList.json();
+
+    // ✅ Return both product count and product list
+    return {
+		productCount: productsCountData?.data?.productsCount?.count || 0,
+		products: allProductsData?.data?.products?.nodes || [],
+		CustomerListData: CustomerListData?.data?.customersCount?.count || 0,
+    };
+  } catch (error) {
+    console.error("❌ Loader Error:", error);
+    return {
+      productCount: 0,
+      products: [],
+      error: "Failed to load product data.",
+    };
+  }
+};
 
 
 export default function AdditionalPage() {
+	const loaderData = useLoaderData();
+	const productCount = loaderData;
 	const [textValue, setTextValue] = useState('');
 	const [numberValue, setNumberValue] = useState('');
 
@@ -11,6 +50,7 @@ export default function AdditionalPage() {
 	}
 
 
+	console.log(productCount);
 
 	return (
 		<s-page heading="A page with additional components">
