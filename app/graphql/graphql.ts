@@ -25,7 +25,40 @@ export const All_Products = `#graphql
                 }
               }
             }
-            
+            variants(first: 50) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+            }
+        }
+    }
+`;
+
+export const Search_Products = `#graphql
+    query GetProducts($query: String) {
+         products(first: 100, query: $query) {
+            nodes {
+            id
+            title
+            createdAt
+            status
+            featuredMedia{
+              preview{
+                image{
+                  url
+                }
+              }
+            }
+            variants (first: 50) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
             }
         }
     }

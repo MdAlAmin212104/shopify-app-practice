@@ -1,0 +1,4 @@
+- [x] Add useState for searchTerm in AdditionalPage component
+- [x] Add onChange handler to the search text field to update searchTerm
+- [x] Compute filteredProducts by filtering productCount.products based on searchTerm (case-insensitive)
+- [x] Update the s-table-body to map over filteredProducts instead of productCount.products
