@@ -2,49 +2,50 @@ import { useState } from "react";
 import { All_Products_Count, All_Products, Customers_List, Product_Details } from "app/graphql/graphql";
 import { LoaderFunctionArgs, useLoaderData } from "react-router";
 import { authenticate } from "app/shopify.server";
+import { Product } from "@shopify/app-bridge-react";
 
 
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+	const { admin } = await authenticate.admin(request);
 
-  try {
-    // 🟢 Fetch total product count
-    const productsCountResponse = await admin.graphql(All_Products_Count);
-    const productsCountData = await productsCountResponse.json();
+	try {
+		// 🟢 Fetch total product count
+		const productsCountResponse = await admin.graphql(All_Products_Count);
+		const productsCountData = await productsCountResponse.json();
 
-    // 🟢 Fetch all products
-    const allProductsResponse = await admin.graphql(All_Products);
-    const allProductsData = await allProductsResponse.json();
-
-
-	const CustomerList = await admin.graphql(Customers_List);
-	const CustomerListData = await CustomerList.json();
+		// 🟢 Fetch all products
+		const allProductsResponse = await admin.graphql(All_Products);
+		const allProductsData = await allProductsResponse.json();
 
 
-	// 🟢 Fetch single product details
-    const singleProductResponse = await admin.graphql(Product_Details, {
-      variables: {
-        ownerId: "gid://shopify/Product/8089192595490",
-      },
-    });
-    const singleProductData = await singleProductResponse.json();
+		const CustomerList = await admin.graphql(Customers_List);
+		const CustomerListData = await CustomerList.json();
 
-    // ✅ Return both product count and product list
-    return {
-		productCount: productsCountData?.data?.productsCount?.count || 0,
-		products: allProductsData?.data?.products?.nodes || [],
-		CustomerListData: CustomerListData?.data?.customersCount?.count || 0,
-		singleProduct: singleProductData?.data?.product || null,
-    };
-  } catch (error) {
-    console.error("❌ Loader Error:", error);
-    return {
-      productCount: 0,
-      products: [],
-      error: "Failed to load product data.",
-    };
-  }
+
+		// 🟢 Fetch single product details
+		const singleProductResponse = await admin.graphql(Product_Details, {
+			variables: {
+				ownerId: "gid://shopify/Product/8089192595490",
+			},
+		});
+		const singleProductData = await singleProductResponse.json();
+
+		// ✅ Return both product count and product list
+		return {
+			productCount: productsCountData?.data?.productsCount?.count || 0,
+			products: allProductsData?.data?.products?.nodes || [],
+			CustomerListData: CustomerListData?.data?.customersCount?.count || 0,
+			singleProduct: singleProductData?.data?.product || null,
+		};
+	} catch (error) {
+		console.error("❌ Loader Error:", error);
+		return {
+			productCount: 0,
+			products: [],
+			error: "Failed to load product data.",
+		};
+	}
 };
 
 
@@ -82,16 +83,54 @@ export default function AdditionalPage() {
 			</s-section>
 			<s-section heading="Status" slot="aside">
 				<s-button command="--show" commandFor="modal-1" >Open Modal</s-button>
-				<s-modal id="modal-1" heading="Return Policy">
-					<s-paragraph>
-						We have a 30-day return policy, which means you have 30 days after receiving
-						your item to request a return.
-					</s-paragraph>
-					<s-paragraph>
-						To be eligible for a return, your item must be in the same condition that
-						you received it, unworn or unused, with tags, and in its original packaging.
-						You’ll also need the receipt or proof of purchase.
-					</s-paragraph>
+				<s-modal id="modal-1" heading="Products" size="large">
+					<s-section padding="none" accessibilityLabel="Products table section">
+						<s-table>
+							<s-grid slot="filters" gap="small-200" gridTemplateColumns="1fr auto">
+								<s-text-field
+									icon="search"
+									placeholder="Searching all Products"
+								></s-text-field>
+							</s-grid>
+							<s-table-header-row>
+								<s-table-header listSlot="primary">Title</s-table-header>
+								<s-table-header format="numeric">Pieces</s-table-header>
+								<s-table-header>Created</s-table-header>
+								<s-table-header listSlot="secondary">Status</s-table-header>
+							</s-table-header-row>
+							<s-table-body>
+								{productCount.products.map((product: any) => (
+									<s-table-row key={product.id} clickDelegate={`${product.id}-checkbox`}>
+										<s-table-cell>
+											<s-stack direction="inline" gap="small" alignItems="center">
+												<s-checkbox id={`${product.id}-checkbox`}></s-checkbox>
+												<s-clickable border="base" borderRadius="base" inlineSize="40px" blockSize="40px">
+													<s-image
+														objectFit="cover"
+														src={product.featuredMedia?.preview?.image?.url || "https://picsum.photos/80"}
+													></s-image>
+												</s-clickable>
+												<s-link>{product.title}</s-link>
+											</s-stack>
+										</s-table-cell>
+										<s-table-cell>{product.variants?.length}</s-table-cell>
+										<s-table-cell>{new Date(product.createdAt).toDateString()}</s-table-cell>
+										<s-table-cell>
+											{ product.status === "DRAFT" ? (
+												<s-badge color="base" tone="info">
+													{product.status || "Draft"}
+												</s-badge>
+											) : (
+												<s-badge color="base" tone="success">
+												{product.status || "Active"}
+											</s-badge>)}
+										</s-table-cell>
+									</s-table-row>
+								))}
+							</s-table-body>
+						</s-table>
+					</s-section>
+
 					<s-button
 						variant="primary"
 						command="--hide"

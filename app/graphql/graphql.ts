@@ -12,10 +12,20 @@ export const All_Products_Count = `#graphql
 
 export const All_Products = `#graphql
     query GetProducts {
-        products(first: 10) {
+         products(first: 100) {
             nodes {
             id
             title
+            createdAt
+            status
+            featuredMedia{
+              preview{
+                image{
+                  url
+                }
+              }
+            }
+            
             }
         }
     }

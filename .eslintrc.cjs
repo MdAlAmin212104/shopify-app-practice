@@ -50,6 +50,7 @@ module.exports = {
       },
       rules: {
         "react/no-unknown-property": ["error", { ignore: ["variant"] }],
+        "@typescript-eslint/no-explicit-any": "error",
       },
     },
 
@@ -94,3 +95,10 @@ module.exports = {
     shopify: "readonly"
   },
 };
+
+
+export default tseslint.config({
+  rules: {
+    "@typescript-eslint/no-explicit-any": "error"
+  }
+});
